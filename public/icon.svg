@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="NEXA logo">
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="50%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="#090b12"/>
+  <rect x="48" y="48" width="416" height="416" rx="96" fill="url(#bg)"/>
+  <path d="M170 320V192h42l44 62 44-62h42v128h-34v-79l-52 72h-20l-52-72v79h-34zm176 0V192h36l60 84V192h34v128h-34l-62-86v86h-34z" fill="#f8fafc" opacity="0.96"/>
+</svg>

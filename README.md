@@ -1,33 +1,97 @@
-# NEXA
+# NEXA PRIME
 
-NEXA is a unified social workspace prototype combining a personalized video feed, messaging, channels, creator studio, and communities in one responsive interface.
+منصة اجتماعية متعددة الاستخدامات تجمع الفيديو القصير، الرسائل، القنوات، المجتمعات، الاستوديو، وطبقة أدوات للمطورين في تجربة واحدة متجاوبة.
 
-## Run locally
+> **الحالة:** نموذج واجهة أمامية قابل للتجربة. ليس نظامًا إنتاجيًا أو ضمانًا بأن الأمان "مستحيل الاختراق". أي نشر حقيقي يحتاج Backend، إدارة أسرار، مراقبة، اختبارات اختراق، ومراجعة قانونية وخصوصية.
+
+## التشغيل المحلي
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Frontend-only mode
+يفتح Vite التطبيق على [http://localhost:5173](http://localhost:5173). ولجعله متاحًا من الشبكة المحلية:
 
-NEXA currently runs entirely in the browser with Vite and local state. The developer portal, experiments, integrations UI, and owner unlock are local to this browser. No Backend, database, Docker, or API server is required.
+```bash
+npm run dev -- --host 0.0.0.0
+```
 
-This mode is suitable for prototyping only. Local storage can be inspected or cleared, and AI/API integrations are displayed as local configuration until a secure Backend is added.
+لتشغيل الواجهة وBackend معًا:
 
-The current build is a frontend-first prototype with local state for likes, saves, follows, chat selection, sending messages, experimental CoreAuth, device binding, golden verification, and multi-account switching. The API and persistence boundaries are intentionally ready to be connected in the next phase.
+```bash
+cp .env.example .env.local
+# املأ القيم السرية محليًا فقط
+npm run dev:all
+```
 
-## Experimental authentication
+يعمل Backend داخليًا على المنفذ `4000`، وتصل إليه الواجهة عبر نفس نطاق Vite باستخدام proxy، لذلك استخدم `/auth/google` وليس `:4000/auth/google`. فحص API متاح عبر `/api/health`.
 
-- The first three locally created users receive `verification: "gold"` and a gold badge.
-- Login and registration continue to `DeviceBindScreen` before opening the home screen.
-- `Add account` and `Switch account` are available in the desktop sidebar.
-- Demo credentials are stored in browser `localStorage` only. This is intentionally not production authentication; connect the documented CoreAuth API before deploying.
+أوامر التحقق:
 
-## Product modules
+```bash
+npm run build
+npm run preview
+```
 
-- **HyperBrain surface:** recommendation context and preference controls in the feed.
-- **DeepGuard surface:** creator studio protection indicator before publishing.
-- **SafeChat boundary:** composer is the integration point for outbound message screening.
-- **TrustScore surface:** account trust indicator in the navigation rail.
-- **CoreAuth boundary:** profile and device/session settings entry point.
+## نطاق NEXA PRIME
+
+### التجربة الاجتماعية
+
+- تغذية فيديو عمودية بأسلوب swipe مع تشغيل تلقائي متجاوب.
+- رسائل ومحادثات، قنوات، مساحات، ومجتمعات.
+- إنشاء المحتوى عبر NEXA Studio مع واجهات DeepGuard وSafeChat التجريبية.
+- ملفات شخصية، متابعة، إعجاب، حفظ، مشاركة، وتبديل الحسابات.
+- تخطيط متكيف للهاتف، الجهاز اللوحي، وسطح المكتب.
+
+### الذكاء الاصطناعي
+
+طبقة HyperBrain وDeepSeek اختيارية ومهيأة لتقديم توصيات واقتراحات تطوير وتحليل استخدام. يجب أن تكون التغييرات قابلة للمراجعة، وأن يحتفظ النظام بسجل إصدارات وتاريخ تغييرات append-only. لا تُحذف السجلات القديمة إلا بإجراء مالك موثق يخضع لسياسة الاحتفاظ والخصوصية.
+
+### بوابة المطورين
+
+توجد بوابة `/dev` تجريبية مخفية من التنقل العام، مع مسار أولي للوصول الموثوق، تجارب Draft، تكاملات، ومساعد تطوير. النسخة الحالية تعتمد على حالة المتصفح ولا توفر حماية إنتاجية.
+
+## خارطة الإنتاج
+
+هذه العناصر مطلوبة قبل وصف NEXA بأنه جاهز للنشر:
+
+- Backend موثق مع PostgreSQL، Redis، تخزين وسائط، وطوابير مهام.
+- CoreAuth حقيقي: جلسات قصيرة، refresh token دوّار، MFA، استرداد حساب، وإبطال جلسات.
+- تفويض RBAC/ABAC على الخادم، مع سجل تدقيق غير قابل للتلاعب.
+- تخزين الأسرار في Secret Manager أو متغيرات بيئة الخادم فقط.
+- فحص رفع الملفات، حدود معدل، حماية CSRF/XSS/SSRF، تشفير أثناء النقل والتخزين، ونسخ احتياطية مشفرة.
+- مراقبة سلامة الخادم، تنبيهات، اختبارات آلية، اختبارات اختراق، وخطة استجابة للحوادث.
+- نظام إشراف يعمل Offline عند الحاجة مع قائمة كلمات قابلة للتحديث، مراجعة بشرية، وآلية استئناف.
+- عقود API وإصدارات بيانات تحفظ التوافق ولا تحذف التاريخ دون سياسة واضحة.
+- حزم Android وiOS عبر طبقة تطبيق أصلية أو إطار متعدد المنصات، بالإضافة إلى Web.
+
+## نموذج الأمان
+
+نمط النقر وبصمة الجهاز مناسبان كطبقة UX إضافية، لكنهما لا يمكن أن يكونا وسيلة المصادقة الوحيدة: كود الواجهة و`localStorage` قابلان للفحص والتعديل من صاحب الجهاز. يجب أن تتم صلاحيات المطور الحساسة على الخادم باستخدام MFA، مفاتيح WebAuthn أو مفاتيح أجهزة، وموافقة متعددة عند العمليات عالية الخطورة.
+
+كما أن MutationObserver وShadow DOM لا يمنعان تعديل DOM من أدوات المطور. الحماية الحقيقية تكون عبر حدود الخادم، التوقيع، التفويض، التدقيق، والمراقبة. لا تعتمد على فحص المتصفح كل 0.5 ثانية كضمان أمني.
+
+## تحقيق الدخل
+
+مسارات غير مفروضة على المستخدم: إعلانات خفيفة داخل Explore، محتوى وقنوات مدعومة، وميزات سوق مجانية ومدفوعة للشركات والمبدعين. يجب أن تكون الإعلانات معلنة، قابلة للضبط، متوافقة مع الخصوصية، وألا تستخدم بيانات حساسة دون موافقة.
+
+## الأسرار ومفاتيح API
+
+لا تضع مفاتيح DeepSeek أو Google أو أي بيانات اعتماد في README أو JavaScript أو Git. استخدم ملفًا محليًا غير متتبع مثل `.env.local`، ومرّر المفاتيح إلى Backend فقط. المفتاح الذي ظهر في أي مواصفة أو محادثة يجب اعتباره مكشوفًا وإلغاؤه وإصدار بديل له.
+
+> Backend الحالي يستخدم ذاكرة العملية للتطوير فقط؛ ستضيع الجلسات والمستخدمون عند إعادة التشغيل. يجب استبدالها بقاعدة بيانات وجلسات Redis قبل الإنتاج.
+
+### الإشراف النصي الأولي
+
+يفحص Backend النصوص الجديدة في المنشورات والتعليقات والرسائل والملفات الشخصية والقنوات باستخدام قائمة أولية، ويمكن إضافة كلمات مفصولة بفواصل عبر `CONTENT_BLOCKLIST`. هذا الفحص ليس شاملًا ولا يكتشف الصور أو الفيديو، ولا يغني عن فحص الوسائط ومراجعة البلاغات بشريًا قبل الإطلاق.
+
+لفحص الفيديو آليًا، يمكن تهيئة `AWS_REGION` و`AWS_S3_BUCKET` و`AWS_REKOGNITION_SNS_TOPIC_ARN` و`AWS_REKOGNITION_ROLE_ARN` مع صلاحيات IAM مناسبة. ينسخ الخادم الفيديو مؤقتًا إلى S3 لفحص Rekognition ويحذفه بعد اكتمال المهمة؛ الفيديوهات التي تصنفها الخدمة أو يفشل فحصها تبقى مخفية للمراجعة البشرية. دون الإعدادات، تستخدم المنصة مسار المراجعة البشرية فقط. يجب الإفصاح في سياسة الخصوصية عن معالجة AWS للوسائط قبل تفعيل التكامل في بيئة حقيقية، وإضافة قاعدة lifecycle لحذف ملفات الفحص المؤقتة المتروكة في S3.
+
+## مبادئ التطوير
+
+- لا نحذف تفاصيل أو إعدادات أو سجلات قديمة بصمت.
+- كل تغيير مهم يملك سجلًا وإصدارًا وإمكانية مراجعة.
+- الواجهة تتكيف مع الجهاز دون التضحية بإمكانية الوصول.
+- الميزات التجريبية تحمل حالة واضحة ولا تُعرض كضمانات إنتاجية.
+- أي قرار أمني يُنفذ على الخادم، لا في الواجهة وحدها.

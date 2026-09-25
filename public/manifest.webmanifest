@@ -1,0 +1,20 @@
+{
+  "name": "NEXA",
+  "short_name": "NEXA",
+  "description": "NEXA social platform for short videos, messaging, communities, and creator tools.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090b12",
+  "theme_color": "#090b12",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

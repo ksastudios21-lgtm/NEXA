@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  moderator
+  owner
+}
+
+enum Verification {
+  standard
+  yellow
+  gold
+}
+
+enum Visibility {
+  public
+  followers
+  private
+}
+
+enum ChannelVisibility {
+  public
+  private
+}
+
+enum ReportStatus {
+  open
+  reviewing
+  resolved
+  dismissed
+}
+
+enum ProposalStatus {
+  proposed
+  accepted
+  rejected
+}
+
+model User {
+  id              String           @id @default(uuid()) @db.Uuid
+  email           String           @unique
+  displayName     String           @map("display_name")
+  username        String           @unique
+  bio             String           @default("")
+  avatarUrl       String?          @map("avatar_url")
+  bannerUrl       String?          @map("banner_url")
+  location        String           @default("")
+  website         String           @default("")
+  joinDate        DateTime         @default(now()) @map("join_date")
+  role            UserRole         @default(user)
+  verification    Verification     @default(standard)
+  emailVerified   Boolean          @default(false) @map("email_verified")
+  status          String           @default("active")
+  tier            String           @default("normal")
+  privacy         Json             @default("{}")
+  notificationsEnabled Boolean     @default(true) @map("notifications_enabled")
+  language        String           @default("ar")
+  theme           String           @default("dark")
+  mfaEnabled      Boolean          @default(false) @map("mfa_enabled")
+  failedLogins    Int              @default(0) @map("failed_logins")
+  lockedUntil     DateTime?        @map("locked_until")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  identities      AuthIdentity[]
+  sessions        Session[]
+  devices         Device[]
+  loginHistory    LoginHistory[]
+  posts           Post[]
+  comments        Comment[]
+  following       Follow[]         @relation("follower")
+  followers       Follow[]         @relation("followed")
+  ownedChannels   Channel[]
+  sentMessages    Message[]        @relation("sender")
+  receivedMessages Message[]       @relation("recipient")
+  notifications   Notification[]
+  reports         Report[]
+  moderationLogs  ModerationLog[]
+  aiHistory       AIHistory[]
+  emailTokens     EmailToken[]
+  postLikes       PostLike[]
+  postSaves       PostSave[]
+  commentLikes    CommentLike[]
+}
+
+model AuthIdentity {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  provider        String
+  providerSubject String   @map("provider_subject")
+  passwordHash    String?  @map("password_hash")
+  createdAt       DateTime @default(now()) @map("created_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@map("auth_identities")
+}
+
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  refreshTokenHash String    @unique @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Device {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String
+  fingerprint String   @unique
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lastSeenAt(sort: Desc)])
+  @@map("devices")
+}
+
+model LoginHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  ip        String   @default("")
+  userAgent String   @default("") @map("user_agent")
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("login_history")
+}
+
+model Post {
+  id         String     @id @default(uuid()) @db.Uuid
+  authorId   String     @map("author_id") @db.Uuid
+  body       String
+  mediaUrl   String?    @map("media_url")
+  mediaType  String?    @map("media_type")
+  linkUrl    String?    @map("link_url")
+  mentions   Json       @default("[]")
+  hashtags   Json       @default("[]")
+  viewCount  Int        @default(0) @map("view_count")
+  boostScore Float      @default(0) @map("boost_score")
+  visibility Visibility @default(public)
+  moderationStatus String @default("approved") @map("moderation_status")
+  moderationJobId String? @map("moderation_job_id")
+  moderationS3Key String? @map("moderation_s3_key")
+  moderationLabels Json? @map("moderation_labels")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  deletedAt  DateTime?  @map("deleted_at")
+  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments   Comment[]
+  likes      PostLike[]
+  saves      PostSave[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([moderationStatus, createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+model PostLike {
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@map("post_likes")
+}
+
+model PostSave {
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@map("post_saves")
+}
+
+model Comment {
+  id        String    @id @default(uuid()) @db.Uuid
+  postId    String    @map("post_id") @db.Uuid
+  authorId  String    @map("author_id") @db.Uuid
+  parentId  String?   @map("parent_id") @db.Uuid
+  body      String
+  mediaUrl  String?   @map("media_url")
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("comment_replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("comment_replies")
+  likes     CommentLike[]
+
+  @@map("comments")
+}
+
+model CommentLike {
+  commentId String   @map("comment_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@map("comment_likes")
+}
+
+model Follow {
+  followerId String   @map("follower_id") @db.Uuid
+  followedId String   @map("followed_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+  follower   User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followed   User     @relation("followed", fields: [followedId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followedId])
+  @@map("follows")
+}
+
+model Channel {
+  id          String            @id @default(uuid()) @db.Uuid
+  ownerId     String            @map("owner_id") @db.Uuid
+  name        String
+  description String             @default("")
+  visibility  ChannelVisibility @default(public)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  owner       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  messages    Message[]
+
+  @@map("channels")
+}
+
+model Message {
+  id          String    @id @default(uuid()) @db.Uuid
+  senderId    String    @map("sender_id") @db.Uuid
+  recipientId String?   @map("recipient_id") @db.Uuid
+  channelId   String?   @map("channel_id") @db.Uuid
+  body        String
+  createdAt   DateTime  @default(now()) @map("created_at")
+  sender      User      @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User?     @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  channel     Channel?  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt(sort: Desc)])
+  @@map("messages")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      String
+  payload   Json      @default("{}")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Report {
+  id         String       @id @default(uuid()) @db.Uuid
+  reporterId String       @map("reporter_id") @db.Uuid
+  targetType String       @map("target_type")
+  targetId   String       @map("target_id") @db.Uuid
+  reason     String
+  status     ReportStatus @default(open)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  reporter   User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("reports")
+}
+
+model ModerationLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  moderatorId  String?   @map("moderator_id") @db.Uuid
+  targetType   String    @map("target_type")
+  targetId     String?   @map("target_id") @db.Uuid
+  action       String
+  reason       String
+  createdAt    DateTime  @default(now()) @map("created_at")
+  moderator    User?     @relation(fields: [moderatorId], references: [id], onDelete: SetNull)
+
+  @@map("moderation_logs")
+}
+
+model AIHistory {
+  id        String         @id @default(uuid()) @db.Uuid
+  ownerId   String         @map("owner_id") @db.Uuid
+  action    String
+  proposal  Json
+  status    ProposalStatus @default(proposed)
+  createdAt DateTime       @default(now()) @map("created_at")
+  owner     User           @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+
+  @@map("ai_change_log")
+}
+
+model EmailToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  type      String
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("email_tokens")
+}

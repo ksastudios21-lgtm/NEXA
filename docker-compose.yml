@@ -1,0 +1,82 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:4000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:4000/auth/google/callback}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      SESSION_SECRET: ${SESSION_SECRET:-replace-with-a-long-random-value}
+      JWT_SECRET: ${JWT_SECRET:-replace-with-a-long-random-value}
+      DATABASE_URL: postgresql://nexa:change-me@postgres:5432/nexa
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-nexa}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-change-me-now}
+      MINIO_BUCKET: ${MINIO_BUCKET:-nexa-media}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_REKOGNITION_SNS_TOPIC_ARN: ${AWS_REKOGNITION_SNS_TOPIC_ARN:-}
+      AWS_REKOGNITION_ROLE_ARN: ${AWS_REKOGNITION_ROLE_ARN:-}
+      AWS_REKOGNITION_MIN_CONFIDENCE: ${AWS_REKOGNITION_MIN_CONFIDENCE:-75}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-no-reply@example.com}
+      SMTP_PASS: ${SMTP_PASS:-replace-with-smtp-password}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@nexa.app}
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nexa}
+      POSTGRES_USER: ${POSTGRES_USER:-nexa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - nexa-postgres:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - nexa-redis:/data
+
+  minio:
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nexa}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-now}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - nexa-minio:/data
+
+volumes:
+  nexa-postgres:
+  nexa-redis:
+  nexa-minio:
